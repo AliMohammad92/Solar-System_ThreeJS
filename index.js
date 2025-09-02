@@ -72,7 +72,9 @@ asteroid().then((model) => {
     debug.asteroid.initialPosition.y,
     debug.asteroid.initialPosition.z
   );
-  model.scale.set(2, 2, 2);
+  // Set initial scale based on debug size
+  const initialSize = debug.asteroid.size;
+  model.scale.set(initialSize, initialSize, initialSize);
   scene.add(model);
   asteroidModel = model;
 
@@ -85,17 +87,30 @@ asteroid().then((model) => {
     debug.asteroid.initialVelocity.z
   );
 
-  const asteroidLight = new THREE.PointLight(0xffffff, 20, 2000);
+  // Add ambient lighting around the asteroid
+  const asteroidAmbientLight = new THREE.AmbientLight(0x666666, 0.6);
+  asteroidAmbientLight.position.set(0, 0, 0);
+  model.add(asteroidAmbientLight);
+  
+  // Add point light for close-range illumination
+  const asteroidLight = new THREE.PointLight(0xffffff, 15, 1500);
   asteroidLight.position.set(0, 0, 0);
   model.add(asteroidLight);
 
-  const asteroidLight2 = new THREE.PointLight(0xffeecc, 10, 1000);
-  asteroidLight2.position.set(5, 5, 5);
+  // Add warm accent light
+  const asteroidLight2 = new THREE.PointLight(0xffeecc, 8, 800);
+  asteroidLight2.position.set(3, 3, 3);
   model.add(asteroidLight2);
 
-  const backLight = new THREE.DirectionalLight(0xffffff, 1.5);
-  backLight.position.set(-5, 2, 5);
-  asteroidModel.add(backLight);
+  // Add back lighting for depth
+  const backLight = new THREE.DirectionalLight(0xffffff, 1.2);
+  backLight.position.set(-3, 1, 3);
+  model.add(backLight);
+  
+  // Add fill light for shadow softening
+  const fillLight = new THREE.DirectionalLight(0x87ceeb, 0.8);
+  fillLight.position.set(2, -1, -2);
+  model.add(fillLight);
 
   cameraManager.updateCameraPosition(asteroidModel);
 });
@@ -119,6 +134,10 @@ function animate() {
 
   if (asteroidModel && asteroidMotion) {
     if (!debug.simulation.paused) {
+      // Update asteroid scale based on debug size control
+      const currentSize = debug.asteroid.size;
+      asteroidModel.scale.set(currentSize, currentSize, currentSize);
+      
       asteroidMotion.update(asteroidModel, elapsedTime);
 
       const asteroidPos = asteroidModel.position.clone();
@@ -157,9 +176,7 @@ function animate() {
       // Check for collisions
       const collisionData = physicsEngine.checkCollision(
         asteroidModel,
-        jupiterPlanet,
-        debug.asteroid.radius,
-        debug.planets.jupiterRadius
+        jupiterPlanet
       );
 
       if (collisionData.collision) {

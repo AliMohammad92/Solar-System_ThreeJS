@@ -11,8 +11,9 @@ export class DebugGUI {
         velocity: { x: 0, y: 0, z: 0 },
         acceleration: { x: 0, y: 0, z: 0 },
         // Editable properties
-        mass: 4,
-        radius: 5,
+        mass: 20, // Will be calculated from density * size^3
+        size: 2, // New: asteroid size multiplier
+        density: 2.5, // New: asteroid density (g/cm³)
         // Initial state (editable)
         initialPosition: { x: 1500, y: 0, z: 200 },
         initialVelocity: { x: 0, y: 0, z: -20 },
@@ -23,8 +24,8 @@ export class DebugGUI {
       // Planet properties
       planets: {
         sunMass: 1000000,
-        jupiterMass: 500800,
-        jupiterRadius: 36
+        jupiterMass: 500800
+        // Removed: jupiterRadius
       },
       // Simulation parameters
       simulation: {
@@ -37,10 +38,13 @@ export class DebugGUI {
     this.masses = {
       sun: this.debug.planets.sunMass,
       jupiter: this.debug.planets.jupiterMass,
-      asteroid: this.debug.asteroid.mass,
+      asteroid: 20, // Will be updated by updateAsteroidMassFromDensity()
     };
     
     this.setupGUI();
+    
+    // Initialize asteroid mass based on initial density and size
+    this.updateAsteroidMassFromDensity();
   }
   
   setupGUI() {
@@ -50,11 +54,27 @@ export class DebugGUI {
     const physicsFolder = this.gui.addFolder('Physics');
     
     // Add asteroid controls
-    asteroidFolder.add(this.debug.asteroid, 'mass', 0.1, 100, 0.1).name('Mass').onChange(value => { 
-      this.masses.asteroid = value; 
+    // Mass is now calculated automatically from density and size
+    
+    asteroidFolder.add(this.debug.asteroid, 'size', 0.1, 10, 0.1).name('Size Multiplier').onChange(value => {
+      this.updateAsteroidMassFromDensity();
+      // Update volume display
+      if (this.volumeDisplay) {
+        this.volumeDisplay.volume = this.calculateVolume();
+      }
     });
     
-    asteroidFolder.add(this.debug.asteroid, 'radius', 1, 20, 0.1).name('Collision Radius');
+    asteroidFolder.add(this.debug.asteroid, 'density', 0.1, 10, 0.1).name('Density (g/cm³)').onChange(value => {
+      this.updateAsteroidMassFromDensity();
+    });
+    
+    // Display calculated mass and volume (read-only)
+    asteroidFolder.add(this.debug.asteroid, 'mass').name('Calculated Mass').listen();
+    
+    // Add volume display
+    this.volumeDisplay = { volume: this.calculateVolume() };
+    asteroidFolder.add(this.volumeDisplay, 'volume').name('Volume').listen();
+    
     asteroidFolder.add(this.debug.simulation, 'paused').name('Pause Simulation');
     
     // Add reset button
@@ -93,7 +113,7 @@ export class DebugGUI {
       this.masses.jupiter = value; 
     });
     
-    planetsFolder.add(this.debug.planets, 'jupiterRadius', 10, 100, 1).name('Jupiter Radius');
+    // Removed: jupiterRadius control
     
     // Physics controls
     physicsFolder.add(this.debug.simulation, 'G', 0.1, 10, 0.1).name('G Constant');
@@ -113,9 +133,31 @@ export class DebugGUI {
     distanceFolder.open();
   }
   
+  // New method to update asteroid mass based on density and size
+  updateAsteroidMassFromDensity() {
+    // Volume is proportional to size^3
+    const volume = this.calculateVolume();
+    // Mass = density * volume
+    this.debug.asteroid.mass = this.debug.asteroid.density * volume;
+    this.masses.asteroid = this.debug.asteroid.mass;
+    
+    // Update volume display if it exists
+    if (this.volumeDisplay) {
+      this.volumeDisplay.volume = volume;
+    }
+  }
+  
+  // Method to calculate volume based on size
+  calculateVolume() {
+    return Math.pow(this.debug.asteroid.size, 3);
+  }
+  
   resetAsteroid() {
     // This will be called from outside to reset asteroid state
     console.log('Reset asteroid requested');
+    
+    // Ensure mass is properly calculated from density and size
+    this.updateAsteroidMassFromDensity();
   }
   
   getDebug() {
@@ -124,6 +166,11 @@ export class DebugGUI {
   
   getMasses() {
     return this.masses;
+  }
+  
+  // New method to get asteroid size for scaling
+  getAsteroidSize() {
+    return this.debug.asteroid.size;
   }
   
   updateAsteroidState(position, velocity, acceleration, distanceToSun, distanceToJupiter) {

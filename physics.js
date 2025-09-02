@@ -7,7 +7,7 @@ export class PhysicsEngine {
     this.masses = {
       sun: 1000000,
       jupiter: 500800,
-      asteroid: 4
+      asteroid: 20
     };
   }
   
@@ -31,14 +31,14 @@ export class PhysicsEngine {
     return { acceleration, distance };
   }
   
-  checkCollision(asteroidModel, jupiterPlanet, asteroidRadius, jupiterRadius) {
+  checkCollision(asteroidModel, jupiterPlanet) {
     if (!asteroidModel) return { collision: false, type: null };
     
     const distance = asteroidModel.position.distanceTo(jupiterPlanet.position);
-    const r1 = asteroidRadius;
-    const r2 = jupiterRadius;
+    // Use a fixed collision threshold since we removed the radius control
+    const collisionThreshold = 50; // Fixed collision distance
     
-    if (distance <= (r1 + r2)) {
+    if (distance <= collisionThreshold) {
       return { collision: true, distance };
     }
     

@@ -135,14 +135,25 @@ export class SolarSystem {
   }
   
   addLighting() {
-    // Add ambient light
-    const ambientLight = new THREE.AmbientLight(0x444444, 0.2);
+    // Add ambient light for overall scene illumination
+    const ambientLight = new THREE.AmbientLight(0x444444, 0.3);
     this.scene.add(ambientLight);
     
-    // Add point light to sun
-    const sunLight = new THREE.PointLight("#faf55a00", 125000);
-    sunLight.position.set(0, 0, 0);
-    this.planets.sun.add(sunLight);
+    // Add main directional light from sun (center of solar system)
+    const sunDirectionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    sunDirectionalLight.position.set(0, 0, 0);
+    sunDirectionalLight.target.position.set(1, 0, 0); // Point towards positive X
+    this.scene.add(sunDirectionalLight);
+    this.scene.add(sunDirectionalLight.target);
+    
+    // Add point light at sun center for close-range illumination
+    const sunPointLight = new THREE.PointLight(0xfaf55a, 100000, 2000);
+    sunPointLight.position.set(0, 0, 0);
+    this.planets.sun.add(sunPointLight);
+    
+    // Add hemisphere light for better color balance
+    const hemisphereLight = new THREE.HemisphereLight(0x87ceeb, 0x444444, 0.4);
+    this.scene.add(hemisphereLight);
   }
   
   updatePlanetRotations() {
